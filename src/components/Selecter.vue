@@ -67,6 +67,11 @@
         </select>
       </div>
 
+      <div class="buttons">
+        <p class="note-text button">谨慎操作</p>
+        <p class="button link-text " @click="cleanCacheConfirm">清除记录</p>
+      </div>
+
 
     </div>
   </Transition>
@@ -77,6 +82,7 @@ import { ref, onBeforeMount, watch, watchEffect } from "vue";
 import { parseJson, getFile } from "../request";
 import IconSetting from './icons/IconSetting.vue'
 import IconClose from './icons/close.vue'
+
 
 // tell father component the current book name
 const emit = defineEmits<{
@@ -141,12 +147,18 @@ onBeforeMount(() => {
   getFile('collection/names.json', parseJson, setWordCollectionNameList)
 })
 
+const cleanCacheConfirm = () => {
+  const r = confirm('历史记录会被清除\n设置记录将会被重置\n确定要继续吗？')
+  if (r) {
+    localStorage.clear()
+    location.reload()
+  }
+}
 </script>
 
 <style scoped>
 .book-name-selecter {
   display: flex;
-  flex-grow: 1;
   padding: 1rem 1rem;
 }
 

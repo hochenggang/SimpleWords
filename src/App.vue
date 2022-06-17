@@ -128,6 +128,7 @@ const setDailyWordsNumExist = (num: number) => {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  font-size: 0.9rem;
   color: var(--color-link);
 }
 
