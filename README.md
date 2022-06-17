@@ -19,3 +19,5 @@
 
 修改 request.ts 中的域名为你自己的，然后编译，并部署到你的服务器。
 把 collection.zip 和 detail.zip 上传到你的服务器并解压到 index.html 同级目录下的 collins 文件夹。
+
+[Demo](https://words.imhcg.cn/)
