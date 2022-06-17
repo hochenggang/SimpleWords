@@ -175,9 +175,9 @@ const markWord = (action: string) => {
   emit('callWordList', 'reloadDailyWordCollection' + Math.random())
   if (localStorage.getItem('autoLoadNextWord') == 'on') {
     const words = Object.keys(JSON.parse(localStorage.getItem('dailyWordCollection')!))
-
-    console.log('markWord -> autoNext -> ', words[Math.round(Math.random() * words.length)])
-    emit('setCurrentWordName', words[Math.round(Math.random() * words.length)])
+    const nextIndex = Math.round(Math.random() * (words.length - 1))
+    console.log('markWord -> autoNext -> ', words[nextIndex])
+    emit('setCurrentWordName', words[nextIndex])
   }
   else {
     emit('setCurrentWordName', '')
