@@ -28,25 +28,18 @@ const props = defineProps<{
 }>()
 
 
-const dailyWordsNum = ref(0)
-const wordCollectionName = ref('')
-const callWordListAction = ref('')
-const currentWordCollection = ref<string[]>([])
-const learningHistory = ref<Record<string, number>>({})
-const dailyWordCollection = ref<Record<string, number>>({})
+const loadWordCollection = () => localStorage.getItem(props.wordCollectionName) ? JSON.parse(localStorage.getItem(props.wordCollectionName)!) : []
+const wordCollection = ref<string[]>(loadWordCollection())
+
+const loadLearningHistory = () => localStorage.getItem('learningHistory') ? JSON.parse(localStorage.getItem('learningHistory')!) : {}
+const learningHistory = ref<Record<string, number>>(loadLearningHistory())
+
+const loadDailyWordCollection = () => localStorage.getItem('dailyWordCollection') ? JSON.parse(localStorage.getItem('dailyWordCollection')!) : {}
+const dailyWordCollection = ref<Record<string, number>>(loadDailyWordCollection())
+
 const dailyWordCollectionKeys = computed(() => Object.keys(dailyWordCollection.value))
 const dailyWordCollectionFirstLearnKeys = computed(() => Object.keys(dailyWordCollection.value).filter((w) => dailyWordCollection.value[w] > 0 ? false : true))
 const learningHistoryKeys = computed(() => Object.keys(learningHistory.value))
-
-// prevent props
-watchEffect(() => {
-  console.log("WordList -> props changed", props)
-  if (wordCollectionName.value != props.wordCollectionName) {
-    wordCollectionName.value = props.wordCollectionName
-  }
-  if (dailyWordsNum.value != props.dailyWordsNum) { dailyWordsNum.value = props.dailyWordsNum }
-  if (callWordListAction.value != props.callWordListAction) { callWordListAction.value = props.callWordListAction }
-})
 
 
 const getDate = () => {
@@ -54,67 +47,28 @@ const getDate = () => {
   return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
 }
 
-
-const resetCache = () => {
-  localStorage.removeItem('todayDate')
-  localStorage.removeItem('dailyWordCollection')
-}
-
-const loadCache = () => {
-  // load know words
-  console.log("WordList -> loadCache.");
-  // load history
-  if (localStorage.getItem('learningHistory')) {
-    learningHistory.value = JSON.parse(localStorage.getItem('learningHistory')!)
-  } else {
-    learningHistory.value = {};
-    localStorage.setItem('learningHistory', JSON.stringify(learningHistory.value))
-  }
-
-  // delete learned word from word collection
-  if (currentWordCollection.value) {
-    let temp: string[] = []
-    currentWordCollection.value.forEach((word) => {
-      if (!learningHistoryKeys.value.includes(word)) {
-        temp.push(word)
-      }
-    })
-    currentWordCollection.value = temp
-  }
-
-  // load today words
-  const todayDate = getDate();
-  if (localStorage.getItem('todayDate') != todayDate) {
-    prepareTodayWords()
-    localStorage.setItem('todayDate', todayDate)
-    localStorage.setItem('dailyWordCollection', JSON.stringify(dailyWordCollection.value))
-  } else {
-    dailyWordCollection.value = JSON.parse(localStorage.getItem('dailyWordCollection')!)
-  }
-
+const sendLearnedCount = () => {
   const learnedCount = props.dailyWordsNum - dailyWordCollectionFirstLearnKeys.value.length
   emit('setDailyWordsNumExist', learnedCount <= 0 ? 0 : learnedCount)
-
-
 }
+
 
 
 const prepareTodayWords = () => {
   console.log("WordList -> prepareTodayWords");
-
-  if (currentWordCollection.value) {
+  if (wordCollection.value) {
     const todayDate = getDate();
     dailyWordCollection.value = {}
     if (localStorage.getItem('todayDate') != todayDate) {
       console.log("WordList -> It is a new beginning.", todayDate);
       // push new word
       let indexEnd = 0
-      if (currentWordCollection.value.length >= props.dailyWordsNum) {
+      if (wordCollection.value.length >= props.dailyWordsNum) {
         indexEnd = props.dailyWordsNum
       } else {
-        indexEnd = currentWordCollection.value.length - 1
+        indexEnd = wordCollection.value.length - 1
       }
-      currentWordCollection.value?.slice(0, indexEnd).forEach((word) => {
+      wordCollection.value?.slice(0, indexEnd).forEach((word) => {
         dailyWordCollection.value[word] = 0
       })
       // push old word
@@ -134,77 +88,106 @@ const prepareTodayWords = () => {
 }
 
 
-const setCurrentWordCollection = (data: string[]) => {
-  currentWordCollection.value = data;
-  localStorage.setItem(wordCollectionName.value, JSON.stringify(data));
-  if (localStorage.getItem('reset') == '1') {
-    resetCache()
-    loadCache()
-    localStorage.removeItem('reset')
+const loadCache = () => {
+
+  if (wordCollection.value && wordCollection.value.length > 0) {
+    console.log("WordList -> loadCache.")
+
+    // load wordCollection
+    let temp: string[] = []
+    wordCollection.value.forEach((word) => {
+      // delete learned word from word collection
+      if (!learningHistoryKeys.value.includes(word)) {
+        temp.push(word)
+      }
+    })
+    wordCollection.value = temp
+
+    // load learningHistory
+    if (!localStorage.getItem('learningHistory')) {
+      localStorage.setItem('learningHistory', JSON.stringify(learningHistory.value))
+    } else {
+      learningHistory.value = JSON.parse(localStorage.getItem('learningHistory')!)
+    }
+
+    // only wordCollection exists, it is with mean to prepareTodayWords
+    const todayDate = getDate();
+    if (localStorage.getItem('todayDate') != todayDate) {
+      prepareTodayWords()
+      localStorage.setItem('todayDate', todayDate)
+      localStorage.setItem('dailyWordCollection', JSON.stringify(dailyWordCollection.value))
+    } else {
+      dailyWordCollection.value = JSON.parse(localStorage.getItem('dailyWordCollection')!)
+    }
+
+
+  } else {
+    getWordCollection()
   }
-  if (localStorage.getItem('reload') == '1') {
-    loadCache()
-    localStorage.removeItem('reload')
-  }
+
+}
+
+
+const rebuildCache = () => {
+  console.log("WordList -> rebuildCache.")
+  localStorage.removeItem('todayDate')
+  localStorage.removeItem('dailyWordCollection')
+  dailyWordCollection.value = {}
+  loadCache()
+  sendLearnedCount()
+
+}
+
+
+const setWordCollection = (data: string[]) => {
+  wordCollection.value = data;
+  localStorage.setItem(props.wordCollectionName, JSON.stringify(data));
+  rebuildCache()
 };
 
 
 const getWordCollection = () => {
-  console.log("WordList -> getWordCollection", wordCollectionName.value)
-  if (wordCollectionName) {
-    if (localStorage.getItem(wordCollectionName.value)) {
-      setCurrentWordCollection(JSON.parse(localStorage.getItem(wordCollectionName.value)!))
-    } else {
-      if (!localStorage.getItem(wordCollectionName.value)) {
-        getFile('collection/' + wordCollectionName.value, parseJson, setCurrentWordCollection)
-      }
+  console.log("WordList -> getWordCollection", props.wordCollectionName)
+  if (localStorage.getItem(props.wordCollectionName)) {
+    setWordCollection(JSON.parse(localStorage.getItem(props.wordCollectionName)!))
+  } else {
+    if (!localStorage.getItem(props.wordCollectionName)) {
+      getFile('collection/' + props.wordCollectionName, parseJson, setWordCollection)
     }
   }
 }
 
-watch(wordCollectionName, () => {
-  console.log("WordList -> watch -> wordCollectionName", wordCollectionName.value)
-  if (wordCollectionName.value) {
-    getWordCollection()
-  }
+// here use watch insteed of watchEffect because watch not execute on component start but watchEffect do
+watch(() => props.wordCollectionName, () => {
+  console.log("WordList -> watch -> wordCollectionName", props.wordCollectionName)
+  getWordCollection()
 })
 
 
-watch(callWordListAction, () => {
-  console.log("WordList -> watchEffect -> callWordListAction", callWordListAction.value)
-
-  if (callWordListAction.value.includes('loadCache')) {
-    loadCache()
-  }
-  if (callWordListAction.value.includes('resetCache')) {
-    resetCache()
-    loadCache()
-  }
+watch(() => props.dailyWordsNum, () => {
+  console.log("WordList -> watchEffect -> wordCollectionName", props.dailyWordsNum)
+  getWordCollection()
 })
 
 
-
-
-watchEffect(() => {
-  // if dailyWordsNum changed, save it
-  const beforeArgs = localStorage.getItem('beforeArgs')
-  const currentArgs = dailyWordsNum.value + wordCollectionName.value
-  // only flush data after first loaded
-  if (localStorage.getItem('todayDate')) {
-    if (dailyWordsNum.value && wordCollectionName.value && currentArgs != beforeArgs) {
-      localStorage.setItem('beforeArgs', currentArgs)
-      console.log("WordList -> watchEffect -> resetCache")
-      localStorage.setItem('reset', '1')
-      getWordCollection()
-    }
+watch(() => props.callWordListAction, () => {
+  console.log("WordList -> watchEffect -> callWordListAction", props.callWordListAction)
+  if (props.callWordListAction.includes('reloadDailyWordCollection')) {
+    // call from WordDetail to reload dailyWordCollection and send new count number to Selecter
+    dailyWordCollection.value = JSON.parse(localStorage.getItem('dailyWordCollection')!)
+    sendLearnedCount()
   }
 })
-
 
 onBeforeMount(() => {
   console.log("WordList -> onBeforeMount");
-  localStorage.setItem('reload', '1')
-  getWordCollection()
+  // if can not get todayDate, it is the first load
+  if (localStorage.getItem('todayDate')) {
+    loadCache()
+    sendLearnedCount()
+  } else {
+    rebuildCache()
+  }
 })
 
 </script>

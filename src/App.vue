@@ -114,8 +114,6 @@ const setDailyWordsNumExist = (num: number) => {
 }
 
 
-
-
 .note-text {
   font-size: 0.9rem;
   font-weight: lighter;

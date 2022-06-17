@@ -17,9 +17,9 @@
             </span>
           </div>
           <div>
-            <span class="detail-h4 detail-voice space" @click="playAudio(wordDetal!.ph_am_mp3)">Us /{{ wordDetal?.ph_am
+            <span class="detail-h4 detail-voice space" @click="playAudio(wordDetal!.ph_am_mp3)">美/{{ wordDetal?.ph_am
             }}/</span>
-            <span class="detail-h4 detail-voice" @click="playAudio(wordDetal!.ph_en_mp3)">Uk /{{ wordDetal?.ph_en
+            <span class="detail-h4 detail-voice" @click="playAudio(wordDetal!.ph_en_mp3)">英/{{ wordDetal?.ph_en
             }}/</span>
           </div>
           <div :class="detailVisible ? '' : 'blur'" @click="detailVisible = true">
@@ -42,13 +42,13 @@
 
       <div class="bar bottom-bar shadow" style="z-index: 6;" v-if="wordDetal">
         <div class="buttons">
-          <span class="button" style="color:var(--color-danger)" @click="markWord('unkown'), closeDetail()">
+          <span class="button" style="color:var(--color-danger)" @click="markWord('unkown')">
             不认识
           </span>
-          <span class="button" style="color:var(--color-warning)" @click="markWord('maybeKnow'), closeDetail()">
+          <span class="button" style="color:var(--color-warning)" @click="markWord('maybeKnow')">
             不确认
           </span>
-          <span class="button" style="color:var(--color-success)" @click="markWord('know'), closeDetail()">
+          <span class="button" style="color:var(--color-success)" @click="markWord('know')">
             已掌握
           </span>
         </div>
@@ -105,10 +105,24 @@ const wordDetal = ref<{
 const setDetail = (data: any) => {
   console.log(data);
   wordDetal.value = data;
+  const autoPlayStatus = localStorage.getItem('autoPlayStatus') || 'off';
+  const autoPlayType = localStorage.getItem('autoPlayType') || 'am';
+  if (autoPlayStatus == 'on') {
+    switch (autoPlayType) {
+      case 'am':
+        playAudio(wordDetal.value?.ph_am_mp3!)
+        break;
+      case 'en':
+        playAudio(wordDetal.value?.ph_en_mp3!)
+        break;
+
+      default:
+        break;
+    }
+  }
 
 }
 
-const closeDetail = () => emit('setCurrentWordName', '');
 
 
 const playAudio = (src: string) => {
@@ -121,11 +135,6 @@ const playAudio = (src: string) => {
   });
 }
 
-
-const getDate = () => {
-  const d = new Date();
-  return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
-}
 
 const deleteWord = (collectionName: string, word: string) => {
   if (localStorage.getItem(collectionName)) {
@@ -140,14 +149,10 @@ const deleteWord = (collectionName: string, word: string) => {
 
 const addHistory = (word: string, count: number) => {
   if (localStorage.getItem('learningHistory')) {
-
     const temp = JSON.parse(localStorage.getItem('learningHistory')!)
-    if (!temp.hasOwnProperty(word)) {
-      temp[word] = count
-      localStorage.setItem('learningHistory', JSON.stringify(temp))
-      deleteWord('dailyWordCollection', word)
-    }
-
+    temp[word] = count
+    localStorage.setItem('learningHistory', JSON.stringify(temp))
+    deleteWord('dailyWordCollection', word)
   }
 }
 
@@ -167,7 +172,16 @@ const markWord = (action: string) => {
       break;
   }
   // call WordList component to flush today words
-  emit('callWordList', 'loadCache' + Math.random())
+  emit('callWordList', 'reloadDailyWordCollection' + Math.random())
+  if (localStorage.getItem('autoLoadNextWord') == 'on') {
+    const words = Object.keys(JSON.parse(localStorage.getItem('dailyWordCollection')!))
+
+    console.log('markWord -> autoNext -> ', words[Math.round(Math.random() * words.length)])
+    emit('setCurrentWordName', words[Math.round(Math.random() * words.length)])
+  }
+  else {
+    emit('setCurrentWordName', '')
+  }
 
 }
 
