@@ -18,10 +18,14 @@
             </span>
           </div>
           <div>
-            <span class="detail-h4 detail-voice space" @click="playAudio(wordDetal!.ph_am_mp3)">美/{{ wordDetal?.ph_am
-            }}/</span>
-            <span class="detail-h4 detail-voice" @click="playAudio(wordDetal!.ph_en_mp3)">英/{{ wordDetal?.ph_en
-            }}/</span>
+            <span class="detail-h4 detail-voice space"
+              @click="playAudio(HOST + '/collins/voice/word/' + Md5.hashStr(wordDetal!.ph_am_mp3) + '.mp3')">美/{{
+                  wordDetal?.ph_am
+              }}/</span>
+            <span class="detail-h4 detail-voice"
+              @click="playAudio(HOST + '/collins/voice/word/' + Md5.hashStr(wordDetal!.ph_en_mp3) + '.mp3')">英/{{
+                  wordDetal?.ph_en
+              }}/</span>
           </div>
           <div :class="detailVisible ? '' : 'blur'" @click="detailVisible = true">
             <div class="detail-h2">
@@ -32,7 +36,9 @@
               <p class="detail-h3">{{ c.def }}</p>
               <p class="detail-h3">{{ c.tran }}</p>
               <div class="detail-sentences" v-for="e in c.example">
-                <p class="detail-h4 detail-voice" @click="playAudio(e.tts_mp3)">{{ e.ex }}</p>
+                <p class="detail-h4 detail-voice"
+                  @click="playAudio(HOST + '/collins/voice/sentence/' + Md5.hashStr(e.tts_mp3) + '.mp3')"
+                  v-html="getMarkedSentence(e.ex)"></p>
                 <p class="detail-h5">{{ e.tran }}</p>
               </div>
             </div>
@@ -63,14 +69,13 @@
 import { ref, onBeforeMount, watch, watchEffect, Transition } from "vue";
 import { parseJson, getFile, HOST } from "../request";
 import IconArrayLeft from "./icons/arrayLeft.vue";
-
+import { Md5 } from 'ts-md5/dist/md5';
 
 const props = defineProps<{
   wordName: string,
   bookName: string,
 
 }>()
-
 
 const emit = defineEmits<{
   (e: "setCurrentWordName", name: string): void;
@@ -206,9 +211,14 @@ onBeforeMount(() => {
   getFile('detail/' + props.wordName + '.json', parseJson, setDetail)
 })
 
+
+const getMarkedSentence = (text: string) => {
+  const start = text.indexOf(props.wordName)
+  return text.slice(0, start) + '<span class=detail-word-inline>' + props.wordName + '</span>' + text.slice(start + props.wordName.length, text.length)
+}
 </script>
 
-<style scoped>
+<style>
 .detail {
   padding: 0.75rem;
   width: 100%;
@@ -242,8 +252,9 @@ onBeforeMount(() => {
 }
 
 .detail-h2 {
-  font-size: 1rem;
-  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
 }
 
 .detail-h3 {
@@ -258,6 +269,11 @@ onBeforeMount(() => {
 .detail-h5 {
   font-size: 0.9rem;
   font-weight: lighter;
+}
+
+.detail-word-inline {
+  font-weight: bold;
+  color: var(--color-link);
 }
 
 .close {

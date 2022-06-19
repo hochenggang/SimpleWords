@@ -2,7 +2,7 @@
   <ul v-if="dailyWordCollectionKeys" class="word-list">
     <li class="word-item" @click="emit('setCurrentWordName', k)" v-for=" k in dailyWordCollectionKeys" :key="k">
       <span class="word-text">{{ k }}</span>
-      <span class="circle-text">{{ dailyWordCollection[k] > 0 ? '复' : '新' }}</span>
+      <span class="small-text">{{ dailyWordCollection[k] > 0 ? '复' : '新' }}</span>
     </li>
     <p class="fixed-full flex-center note-text" v-if="!dailyWordCollectionKeys.length">
       All done.
@@ -214,9 +214,9 @@ onBeforeMount(() => {
   color: var(--color-link);
 }
 
-.circle-text {
+.small-text {
   font-weight: lighter;
-  color: var(--color-link);
+  color: var(--color-text2);
   font-size: 0.8rem;
 }
 

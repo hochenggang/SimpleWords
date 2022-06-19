@@ -8,6 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "js-md5": "^0.7.3",
+    "ts-md5": "^1.2.11",
     "vue": "^3.2.25"
   },
   "devDependencies": {

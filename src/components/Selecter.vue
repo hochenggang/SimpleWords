@@ -1,10 +1,12 @@
 <template>
-
+  <Transition name="slide-fade">
+    <div v-if="settingVisible" class="fixed-full " style="background-color: var(--color-bg);z-index: 2;"></div>
+  </Transition>
   <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="!settingVisible">
       <div class="buttons">
-        <p class="note-text">{{ dailyWordsNumExist }} Today</p>
-        <div class="button padding-lr-none" @click="settingVisible = !settingVisible">
+        <p class="setting-text">{{ dailyWordsNumExist }} Today</p>
+        <div class="setting-input" @click="settingVisible = !settingVisible">
           <IconSetting />
         </div>
       </div>
@@ -13,60 +15,72 @@
 
   <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="settingVisible">
-      <div class="buttons">
-        <p class="note-text button padding-lr-none">{{ getBriefInfo() }}</p>
+      <div class="setting-item">
+        <p class="setting-text  ">{{ getBriefInfo() }}</p>
 
-        <div class="button padding-lr-none" @click="settingVisible = !settingVisible">
-          <IconClose />
+        <div class="setting-input" @click="settingVisible = !settingVisible">
+          <IconBack />
         </div>
       </div>
-      <div class="buttons">
-        <p class="note-text button padding-lr-none">设定单词集</p>
-        <select class="book-name-selecter link-text padding-lr-none" v-model="wordCollectionName">
-          <option class="link-text" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
+      <div class="setting-item">
+        <p class="setting-text  ">设定单词集</p>
+        <select class="setting-input" v-model="wordCollectionName">
+          <option class="setting-text link-color" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
             {{ name[0].split(".")[0] }} | {{ name[1] }} 词</option>
         </select>
       </div>
-      <div class="buttons">
-        <p class="note-text button padding-lr-none">设定记忆量</p>
-        <select class="book-name-selecter link-text padding-lr-none" v-model="dailyWordsNum">
-          <option class="link-text" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{ num }} 个</option>
+      <div class="setting-item">
+        <p class="setting-text  ">设定记忆量</p>
+        <select class="setting-input" v-model="dailyWordsNum">
+          <option class="setting-text link-color" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{ num
+          }} 个
+          </option>
         </select>
       </div>
-      <div class="buttons">
-        <p class="note-text button padding-lr-none">自动播放开关</p>
-        <select class="book-name-selecter link-text padding-lr-none" v-model="autoPlayStatus">
-          <option class="link-text" v-for="status in ['off', 'on']" :key="status" :value="status">{{ status == 'on' ?
-              '开'
-              : '关'
+      <div class="setting-item">
+        <p class="setting-text  ">自动播放开关</p>
+        <select class="setting-input" v-model="autoPlayStatus">
+          <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
+              status
+                == 'on' ?
+                '开'
+                : '关'
           }}
           </option>
         </select>
       </div>
-      <div class="buttons" v-if="autoPlayStatus == 'on'">
-        <p class="note-text button padding-lr-none">自动播放类型</p>
-        <select class="book-name-selecter link-text padding-lr-none" v-model="autoPlayType">
-          <option class="link-text" v-for="status in ['am', 'en']" :key="status" :value="status">{{ status == 'am' ?
+      <div class="setting-item" v-if="autoPlayStatus == 'on'">
+        <p class="setting-text  ">自动播放类型</p>
+        <select class="setting-input" v-model="autoPlayType">
+          <option class="setting-text link-color" v-for="status in ['am', 'en']" :key="status" :value="status">{{ status
+              == 'am' ?
               '美标' :
               '英标'
           }}
           </option>
         </select>
       </div>
-      <div class="buttons">
-        <p class="note-text button padding-lr-none">连续加载单词</p>
-        <select class="book-name-selecter link-text padding-lr-none" v-model="autoLoadNextWord">
-          <option class="link-text" v-for="status in ['off', 'on']" :key="status" :value="status">{{ status == 'on' ?
-              '开'
-              : '关'
+      <div class="setting-item">
+        <p class="setting-text  ">连续加载单词</p>
+        <select class="setting-input" v-model="autoLoadNextWord">
+          <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
+              status
+                == 'on' ?
+                '开'
+                : '关'
           }}
           </option>
         </select>
       </div>
 
+      <div class="setting-item">
+        <p class="setting-text  ">谨慎操作</p>
+        <p class="setting-text danger-color" @click="cleanCacheConfirm">清除记录</p>
+      </div>
+
       <div class="buttons">
-        <p class="note-text button padding-lr-none">谨慎操作</p>
-        <p class="button link-text " @click="cleanCacheConfirm">清除记录</p>
+        <p class="setting-text  ">Ver.20220620</p>
+
       </div>
 
 
@@ -78,7 +92,7 @@
 import { ref, onBeforeMount, watch, watchEffect } from "vue";
 import { parseJson, getFile } from "../request";
 import IconSetting from './icons/IconSetting.vue'
-import IconClose from './icons/close.vue'
+import IconBack from './icons/back.vue'
 
 
 // tell father component the current book name
@@ -170,22 +184,47 @@ const getBriefInfo = () => {
   })
   let percent = count / wordCollection.length;
   if ((percent < 0.01) && (percent > 0)) percent = 0.01;
+  if (!percent) percent = 0;
   return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%'
 }
 
 </script>
 
-<style scoped>
-.book-name-selecter {
+<style>
+.setting-item {
   display: flex;
-  padding: 1rem 1rem;
+  width: 100%;
+  justify-content: space-between;
+  padding: 0 1rem;
+  opacity: .95;
+  border-bottom: 1px solid var(--color-line2);
+}
+
+.setting-input {
+  display: flex;
+  padding: 1rem 0;
   align-items: center;
   justify-content: right;
   text-align: right;
+  color: var(--color-link);
 }
 
-.padding-lr-none {
-  padding-right: 0;
-  padding-left: 0;
+.setting-text {
+  font-size: 0.9rem;
+  font-weight: lighter;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  padding: 1rem 0;
+  color: var(--color-text2);
+  cursor: pointer;
+}
+
+.danger-color {
+  color: var(--color-danger);
+}
+
+.link-color {
+  color: var(--color-link);
 }
 </style>
