@@ -1,13 +1,10 @@
 <template>
-  <Transition name="slide-fade">
-    <div v-if="settingVisible" class="fixed-full " style="background-color: var(--color-bg);z-index: 2;"></div>
-  </Transition>
-  <Transition name="slide-fade">
 
+  <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="!settingVisible">
       <div class="buttons">
         <p class="note-text">{{ dailyWordsNumExist }} Today</p>
-        <div class="button header-icon" @click="settingVisible = !settingVisible">
+        <div class="button padding-lr-none" @click="settingVisible = !settingVisible">
           <IconSetting />
         </div>
       </div>
@@ -17,28 +14,28 @@
   <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="settingVisible">
       <div class="buttons">
-        <p class="note-text button">设置</p>
-        <div class="button header-icon" @click="settingVisible = !settingVisible">
+        <p class="note-text button padding-lr-none">{{ getBriefInfo() }}</p>
+
+        <div class="button padding-lr-none" @click="settingVisible = !settingVisible">
           <IconClose />
         </div>
       </div>
       <div class="buttons">
-        <p class="note-text button">设定单词集</p>
-        <select class="book-name-selecter link-text" v-model="wordCollectionName">
-          <option class="link-text" v-for="name in wordCollectionNameList" :key="name" :value="name">{{
-              name.split(".")[0]
-          }}</option>
+        <p class="note-text button padding-lr-none">设定单词集</p>
+        <select class="book-name-selecter link-text padding-lr-none" v-model="wordCollectionName">
+          <option class="link-text" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
+            {{ name[0].split(".")[0] }} | {{ name[1] }} 词</option>
         </select>
       </div>
       <div class="buttons">
-        <p class="note-text button">设定记忆量</p>
-        <select class="book-name-selecter link-text" v-model="dailyWordsNum">
+        <p class="note-text button padding-lr-none">设定记忆量</p>
+        <select class="book-name-selecter link-text padding-lr-none" v-model="dailyWordsNum">
           <option class="link-text" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{ num }} 个</option>
         </select>
       </div>
       <div class="buttons">
-        <p class="note-text button">自动播放开关</p>
-        <select class="book-name-selecter link-text" v-model="autoPlayStatus">
+        <p class="note-text button padding-lr-none">自动播放开关</p>
+        <select class="book-name-selecter link-text padding-lr-none" v-model="autoPlayStatus">
           <option class="link-text" v-for="status in ['off', 'on']" :key="status" :value="status">{{ status == 'on' ?
               '开'
               : '关'
@@ -47,8 +44,8 @@
         </select>
       </div>
       <div class="buttons" v-if="autoPlayStatus == 'on'">
-        <p class="note-text button">自动播放类型</p>
-        <select class="book-name-selecter link-text" v-model="autoPlayType">
+        <p class="note-text button padding-lr-none">自动播放类型</p>
+        <select class="book-name-selecter link-text padding-lr-none" v-model="autoPlayType">
           <option class="link-text" v-for="status in ['am', 'en']" :key="status" :value="status">{{ status == 'am' ?
               '美标' :
               '英标'
@@ -57,8 +54,8 @@
         </select>
       </div>
       <div class="buttons">
-        <p class="note-text button">连续加载单词</p>
-        <select class="book-name-selecter link-text" v-model="autoLoadNextWord">
+        <p class="note-text button padding-lr-none">连续加载单词</p>
+        <select class="book-name-selecter link-text padding-lr-none" v-model="autoLoadNextWord">
           <option class="link-text" v-for="status in ['off', 'on']" :key="status" :value="status">{{ status == 'on' ?
               '开'
               : '关'
@@ -68,7 +65,7 @@
       </div>
 
       <div class="buttons">
-        <p class="note-text button">谨慎操作</p>
+        <p class="note-text button padding-lr-none">谨慎操作</p>
         <p class="button link-text " @click="cleanCacheConfirm">清除记录</p>
       </div>
 
@@ -154,15 +151,32 @@ const cleanCacheConfirm = () => {
     location.reload()
   }
 }
+
+const getBriefInfo = () => {
+  let count = 0
+  const learningHistory = JSON.parse(localStorage.getItem('learningHistory')!) as {} || {}
+  const wordCollection = JSON.parse(localStorage.getItem(wordCollectionName.value)!) as [] || []
+  wordCollection.forEach((word) => {
+    if (learningHistory.hasOwnProperty(word)) {
+      count += 1
+    }
+  })
+  let percent = count / wordCollection.length;
+  if (percent < 0.01) percent = 0.01;
+  return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%'
+}
 </script>
 
 <style scoped>
 .book-name-selecter {
   display: flex;
   padding: 1rem 1rem;
+  align-items: center;
+  justify-content: right;
+  text-align: right;
 }
 
-.header-icon {
+.padding-lr-none {
   padding-right: 0;
   padding-left: 0;
 }

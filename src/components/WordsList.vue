@@ -73,8 +73,8 @@ const prepareTodayWords = () => {
       })
       // push old word
       Object.keys(learningHistory.value).forEach((word) => {
-        // if remember time less than 3 , push to review
-        if (learningHistory.value[word] < 3) {
+        // if remember time less than 10 , push to review
+        if (learningHistory.value[word] < 10) {
           dailyWordCollection.value[word] = learningHistory.value[word]
         }
       })

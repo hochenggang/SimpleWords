@@ -11,8 +11,9 @@
             <span class="detail-h1 space ">{{ props.wordName }}</span>
             <span>
               <span class="detail-h4 space">{{ '⭐️'.repeat(Number(wordDetal?.collins_star)) }}</span>
-              <span class="detail-h4">{{ wordDetal?.frequency_rank }}/{{ Math.round(wordDetal!.frequency_count /
-                  10000)
+              <span class="detail-h4" v-if="wordDetal?.frequency_rank">{{ wordDetal?.frequency_rank }}/{{
+                  Math.round(wordDetal!.frequency_count /
+                    10000)
               }}w</span>
             </span>
           </div>
@@ -147,7 +148,9 @@ const deleteWord = (collectionName: string, word: string) => {
   }
 }
 
-const addHistory = (word: string, count: number) => {
+
+
+const setHistory = (word: string, count: number) => {
   if (localStorage.getItem('learningHistory')) {
     const temp = JSON.parse(localStorage.getItem('learningHistory')!)
     temp[word] = count
@@ -156,23 +159,37 @@ const addHistory = (word: string, count: number) => {
   }
 }
 
+const addHistory = (word: string, count: number) => {
+  let baseCount = 0
+  const temp = JSON.parse(localStorage.getItem('learningHistory')!) || {}
+  if (temp.hasOwnProperty(word)) {
+    baseCount = temp[word]
+  }
+  setHistory(word, baseCount + count)
+}
+
 const markWord = (action: string) => {
   console.log("WordDetail -> markWord ->", props.wordName, action)
   switch (action) {
     case 'know':
+      // if mark to know, set count+3 
       addHistory(props.wordName, 3)
       break;
     case 'maybeKnow':
+      // if mark to maybeKnow, set count+3
       addHistory(props.wordName, 1)
       break;
     case 'unknow':
-      addHistory(props.wordName, 0)
+      // if mark to unknow, set 0
+      setHistory(props.wordName, 0)
       break;
     default:
       break;
   }
   // call WordList component to flush today words
   emit('callWordList', 'reloadDailyWordCollection' + Math.random())
+
+  // auto play action
   if (localStorage.getItem('autoLoadNextWord') == 'on') {
     const words = Object.keys(JSON.parse(localStorage.getItem('dailyWordCollection')!))
     const nextIndex = Math.round(Math.random() * (words.length - 1))
