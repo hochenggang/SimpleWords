@@ -114,12 +114,19 @@ watchEffect(() => {
   localStorage.setItem('autoLoadNextWord', autoLoadNextWord.value)
 })
 
+const checkCollectionNameExist = () => {
+  if (!wordCollectionNameList.value.includes(wordCollectionName.value)) {
+    return false
+  } else {
+    return true
+  }
+}
 
 const setWordCollectionNameList = (data: string[]) => {
   wordCollectionNameList.value = data;
   localStorage.setItem('wordCollectionNameList', JSON.stringify(data));
-  if (!wordCollectionName.value) {
-    wordCollectionName.value = wordCollectionNameList.value[wordCollectionNameList.value.length - 1];
+  if (!checkCollectionNameExist()) {
+    wordCollectionName.value = wordCollectionNameList.value[wordCollectionNameList.value.length - 1][0];
     localStorage.setItem('wordCollectionName', wordCollectionName.value)
   }
   emit('setWordCollectionName', wordCollectionName.value);
@@ -162,9 +169,10 @@ const getBriefInfo = () => {
     }
   })
   let percent = count / wordCollection.length;
-  if (percent < 0.01) percent = 0.01;
+  if ((percent < 0.01) && (percent > 0)) percent = 0.01;
   return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%'
 }
+
 </script>
 
 <style scoped>
