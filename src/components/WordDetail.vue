@@ -6,7 +6,6 @@
     <div class="bar top-bar shadow" style="z-index: 5;">
       <Transition name="slide-fade">
         <div :key="props.wordName" class="detail" v-if="wordDetal">
-
           <div class="auto-warp">
             <span class="detail-h1 space ">{{ props.wordName }}</span>
             <span>
@@ -18,14 +17,12 @@
             </span>
           </div>
           <div>
-            <span class="detail-h4 detail-voice space"
-              @click="playAudio(HOST + '/collins/voice/word/' + Md5.hashStr(wordDetal!.ph_am_mp3) + '.mp3')">美/{{
-                  wordDetal?.ph_am
-              }}/</span>
-            <span class="detail-h4 detail-voice"
-              @click="playAudio(HOST + '/collins/voice/word/' + Md5.hashStr(wordDetal!.ph_en_mp3) + '.mp3')">英/{{
-                  wordDetal?.ph_en
-              }}/</span>
+            <span class="detail-h4 detail-voice space" @click="playAudio(getWordVoiceLink(wordDetal!.ph_am_mp3))">美/{{
+                wordDetal?.ph_am
+            }}/</span>
+            <span class="detail-h4 detail-voice" @click="playAudio(getWordVoiceLink(wordDetal!.ph_en_mp3))">英/{{
+                wordDetal?.ph_en
+            }}/</span>
           </div>
           <div :class="detailVisible ? '' : 'blur'" @click="detailVisible = true">
             <div class="detail-h2">
@@ -36,15 +33,13 @@
               <p class="detail-h3">{{ c.def }}</p>
               <p class="detail-h3">{{ c.tran }}</p>
               <div class="detail-sentences" v-for="e in c.example">
-                <p class="detail-h4 detail-voice"
-                  @click="playAudio(HOST + '/collins/voice/sentence/' + Md5.hashStr(e.tts_mp3) + '.mp3')"
+                <p class="detail-h4 detail-voice" @click="playAudio(getSentenceVoiceLink(e.tts_mp3))"
                   v-html="getMarkedSentence(e.ex)"></p>
                 <p class="detail-h5">{{ e.tran }}</p>
               </div>
             </div>
           </div>
         </div>
-
       </Transition>
 
       <div class="bar bottom-bar shadow" style="z-index: 6;" v-if="wordDetal">
@@ -108,6 +103,9 @@ const wordDetal = ref<{
 }>()
 
 
+const getSentenceVoiceLink = (url: string) => HOST + '/collins/voice/sentence/' + Md5.hashStr(url) + '.mp3';
+const getWordVoiceLink = (url: string) => HOST + '/collins/voice/word/' + Md5.hashStr(url) + '.mp3';
+
 const setDetail = (data: any) => {
   console.log(data);
   wordDetal.value = data;
@@ -116,10 +114,10 @@ const setDetail = (data: any) => {
   if (autoPlayStatus == 'on') {
     switch (autoPlayType) {
       case 'am':
-        playAudio(wordDetal.value?.ph_am_mp3!)
+        playAudio(getWordVoiceLink(wordDetal.value!.ph_am_mp3))
         break;
       case 'en':
-        playAudio(wordDetal.value?.ph_en_mp3!)
+        playAudio(getWordVoiceLink(wordDetal.value!.ph_en_mp3))
         break;
 
       default:
@@ -213,9 +211,19 @@ onBeforeMount(() => {
 
 
 const getMarkedSentence = (text: string) => {
-  const start = text.indexOf(props.wordName)
-  return text.slice(0, start) + '<span class=detail-word-inline>' + props.wordName + '</span>' + text.slice(start + props.wordName.length, text.length)
+  let placeholder = props.wordName
+  let start = text.indexOf(props.wordName);
+  if (start < 0) {
+    placeholder = placeholder.replace(/^\S/, s => s.toUpperCase());
+    start = text.indexOf(placeholder);
+  }
+  if (start < 0) {
+    return text
+  } else {
+    return text.slice(0, start) + '<span class=detail-word-inline>' + placeholder + '</span>' + text.slice(start + props.wordName.length, text.length)
+  }
 }
+
 </script>
 
 <style>

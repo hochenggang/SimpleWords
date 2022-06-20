@@ -66,7 +66,6 @@ const setDailyWordsNumExist = (num: number) => {
   margin: 1rem;
   background-color: transparent;
   z-index: 3;
-
 }
 
 .top-bar {

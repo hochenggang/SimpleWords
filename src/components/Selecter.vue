@@ -15,75 +15,78 @@
 
   <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="settingVisible">
-      <div class="setting-item">
-        <p class="setting-text  ">{{ getBriefInfo() }}</p>
+      <div class="setting-items">
+        <div class="setting-item">
+          <p class="setting-text">{{ getBriefInfo() }}</p>
 
-        <div class="setting-input" @click="settingVisible = !settingVisible">
-          <IconBack />
+          <div class="setting-input" @click="settingVisible = !settingVisible">
+            <IconBack />
+          </div>
         </div>
-      </div>
-      <div class="setting-item">
-        <p class="setting-text  ">设定单词集</p>
-        <select class="setting-input" v-model="wordCollectionName">
-          <option class="setting-text link-color" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
-            {{ name[0].split(".")[0] }} | {{ name[1] }} 词</option>
-        </select>
-      </div>
-      <div class="setting-item">
-        <p class="setting-text  ">设定记忆量</p>
-        <select class="setting-input" v-model="dailyWordsNum">
-          <option class="setting-text link-color" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{ num
-          }} 个
-          </option>
-        </select>
-      </div>
-      <div class="setting-item">
-        <p class="setting-text  ">自动播放开关</p>
-        <select class="setting-input" v-model="autoPlayStatus">
-          <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
-              status
-                == 'on' ?
-                '开'
-                : '关'
-          }}
-          </option>
-        </select>
-      </div>
-      <div class="setting-item" v-if="autoPlayStatus == 'on'">
-        <p class="setting-text  ">自动播放类型</p>
-        <select class="setting-input" v-model="autoPlayType">
-          <option class="setting-text link-color" v-for="status in ['am', 'en']" :key="status" :value="status">{{ status
-              == 'am' ?
-              '美标' :
-              '英标'
-          }}
-          </option>
-        </select>
-      </div>
-      <div class="setting-item">
-        <p class="setting-text  ">连续加载单词</p>
-        <select class="setting-input" v-model="autoLoadNextWord">
-          <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
-              status
-                == 'on' ?
-                '开'
-                : '关'
-          }}
-          </option>
-        </select>
-      </div>
+        <div class="setting-item">
+          <p class="setting-text">设定单词集</p>
+          <select class="setting-input" v-model="wordCollectionName">
+            <option class="setting-text link-color" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
+              {{ name[0].split(".")[0] }} | {{ name[1] }} 词</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <p class="setting-text">设定记忆量</p>
+          <select class="setting-input" v-model="dailyWordsNum">
+            <option class="setting-text link-color" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{
+                num
+            }} 个
+            </option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <p class="setting-text">自动播放开关</p>
+          <select class="setting-input" v-model="autoPlayStatus">
+            <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
+                status
+                  == 'on' ?
+                  '开'
+                  : '关'
+            }}
+            </option>
+          </select>
+        </div>
+        <div class="setting-item" v-if="autoPlayStatus == 'on'">
+          <p class="setting-text">自动播放类型</p>
+          <select class="setting-input" v-model="autoPlayType">
+            <option class="setting-text link-color" v-for="status in ['am', 'en']" :key="status" :value="status">{{
+                status
+                  == 'am' ?
+                  '美标' :
+                  '英标'
+            }}
+            </option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <p class="setting-text">连续加载单词</p>
+          <select class="setting-input" v-model="autoLoadNextWord">
+            <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
+                status
+                  == 'on' ?
+                  '开'
+                  : '关'
+            }}
+            </option>
+          </select>
+        </div>
 
-      <div class="setting-item">
-        <p class="setting-text  ">谨慎操作</p>
-        <p class="setting-text danger-color" @click="cleanCacheConfirm">清除记录</p>
+        <div class="setting-item">
+          <p class="setting-text">谨慎操作</p>
+          <p class="setting-text danger-color" @click="cleanCacheConfirm">清除记录</p>
+        </div>
+
+        <div class="buttons">
+          <p class="setting-text">Ver.20220620</p>
+
+        </div>
+
       </div>
-
-      <div class="buttons">
-        <p class="setting-text  ">Ver.20220620</p>
-
-      </div>
-
-
     </div>
   </Transition>
 </template>
@@ -191,6 +194,12 @@ const getBriefInfo = () => {
 </script>
 
 <style>
+.setting-items {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+}
+
 .setting-item {
   display: flex;
   width: 100%;
@@ -226,5 +235,9 @@ const getBriefInfo = () => {
 
 .link-color {
   color: var(--color-link);
+}
+
+.overflow {
+  overflow-y: scroll;
 }
 </style>
