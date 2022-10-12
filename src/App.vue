@@ -1,56 +1,99 @@
 <script setup lang="ts">
 
 
-import { ref, onBeforeMount, watch, Transition } from "vue";
+import { ref, onMounted, watch, Transition } from "vue";
 
 import Selecter from './components/Selecter.vue'
 import Loading from './components/Loading.vue'
 import WordsList from './components/WordsList.vue'
 import WordDetail from './components/WordDetail.vue'
 
-import { REQUESTING_COUNT } from './shared';
+import { getWordCollectionNames, getWordCollection } from './query';
+import { buildWordListContent } from './wordTool';
+import { getDate, REQUESTING_COUNT, wordCollectionName, wordCollectionNames, wordCollectionContent, wordListLimit, wordListContent, currentWordDetail, wordListId } from './shared';
 
+// .then((res) => res.json())
+// .then((json) => {})
+// .catch((err) => console.log('error:',err))
+// .finally(() => REQUESTING_COUNT.value -= 1)
 
-const currentWordCollectionName = ref("");
-const setWordCollectionName = (name: string) => {
-  currentWordCollectionName.value = name;
-  console.log("App -> setWordCollectionName -> ", currentWordCollectionName.value)
+const initWordListContent = () => {
+  if (localStorage.getItem('wordListId') == wordListId.value) {
+    console.log('initWordListContent by cache.');
+    wordListContent.value = JSON.parse(localStorage.getItem('wordListContent') as string);
+  } else {
+    console.log('initWordListContent by rebuild.');
+    buildWordListContent(wordListLimit.value);
+  }
 }
 
-const dailyWordsNum = ref(0);
-const setDailyWordsNum = (num: number) => {
-  dailyWordsNum.value = num;
-  console.log("App -> setDailyWordsNum -> ", dailyWordsNum.value)
+const initWordCollectionContent = () => {
+  if (localStorage.getItem(wordCollectionName.value)) {
+    console.log('initWordCollectionContent by cache.')
+    wordCollectionContent.value = JSON.parse(localStorage.getItem(wordCollectionName.value) as string);
+    initWordListContent();
+  } else {
+    console.log('initWordCollectionContent by remote.')
+    getWordCollection(wordCollectionName.value)
+      .then((res) => res.json())
+      .then((json) => {
+        wordCollectionContent.value = Array.from(new Set(json));
+        localStorage.setItem(wordCollectionName.value, JSON.stringify(wordCollectionContent.value));
+        initWordListContent()
+      })
+      .catch((err) => console.log('error:', err))
+      .finally(() => REQUESTING_COUNT.value -= 1)
+  }
 }
 
-const callWordListAction = ref('')
-const callWordList = (action: string) => {
-  console.log("App -> callWordList -> ", action)
-  callWordListAction.value = action
-}
+onMounted(() => {
+  // update word listNames
+  getWordCollectionNames()
+    .then((res) => res.json())
+    .then((json) => {
+      wordCollectionNames.value = json;
+      console.log('ok -> load word list names.')
+      // init word collection name
+      if (!wordCollectionName.value) {
+        wordCollectionName.value = wordCollectionNames.value[0][0];
+        console.log('ok -> init word list name.')
+      } else {
+        initWordCollectionContent();
+      }
+    })
+    .catch((err) => console.log('error:', err))
+    .finally(() => REQUESTING_COUNT.value -= 1)
 
-const currentWordName = ref('')
-const setCurrentWordName = (name: string) => {
-  currentWordName.value = name
-}
+  // check date diff, reset todayFinishedNum
+  if (localStorage.getItem('date') != getDate()) {
+    console.log('reset todayFinishedNum.');
+    localStorage.setItem('todayFinishedNum', '0');
+  }
 
-const dailyWordsNumExist = ref(0)
-const setDailyWordsNumExist = (num: number) => {
-  dailyWordsNumExist.value = num
-}
+  // update date
+  localStorage.setItem('date', getDate());
+})
+
+
+
+// rebuild word list content when word collection content changed
+watch([wordCollectionName, wordListLimit], () => {
+  console.log('watch: wordCollectionName.')
+  localStorage.setItem('wordCollectionName', wordCollectionName.value);
+  localStorage.setItem('wordListLimit', String(wordListLimit.value));
+  initWordCollectionContent();
+})
 
 </script>
 
 <template>
   <div class="main">
     <Loading :count="REQUESTING_COUNT" :after="300" />
-    <Selecter :daily-words-num-exist="dailyWordsNumExist" @set-word-collection-name="setWordCollectionName"
-      @set-daily-words-num="setDailyWordsNum" />
-    <WordsList v-if="currentWordCollectionName" @set-daily-words-num-exist="setDailyWordsNumExist"
-      :call-word-list-action="callWordListAction" :daily-words-num="dailyWordsNum"
-      :word-collection-name="currentWordCollectionName" @set-current-word-name="setCurrentWordName" />
-    <WordDetail :key="currentWordName" v-if="currentWordName" @call-word-list="callWordList"
-      @set-current-word-name="setCurrentWordName" :word-name="currentWordName" :book-name="currentWordCollectionName" />
+    <Selecter />
+    <WordsList />
+    <Transition >
+      <WordDetail v-if="currentWordDetail" />
+    </Transition>
   </div>
 </template>
 
@@ -151,7 +194,7 @@ const setDailyWordsNumExist = (num: number) => {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.1s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .v-enter-from,
@@ -159,17 +202,4 @@ const setDailyWordsNumExist = (num: number) => {
   opacity: 0;
 }
 
-.slide-fade-enter-active {
-  transition: all 0.25s ease-out;
-}
-
-.slide-fade-leave-active {
-  transition: all 0.25s cubic-bezier(1, 0.5, 0.8, 1);
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateX(10px);
-  opacity: 0;
-}
 </style>

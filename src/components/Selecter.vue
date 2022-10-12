@@ -5,7 +5,7 @@
   <Transition name="slide-fade">
     <div class="bar top-bar shadow" v-if="!settingVisible">
       <div class="buttons">
-        <p class="setting-text">{{ dailyWordsNumExist }} Today</p>
+        <p class="setting-text">{{ todayFinishedNum }} Today</p>
         <div class="setting-input" @click="settingVisible = !settingVisible">
           <IconSetting />
         </div>
@@ -26,15 +26,15 @@
         <div class="setting-item">
           <p class="setting-text">设定单词集</p>
           <select class="setting-input" v-model="wordCollectionName">
-            <option class="setting-text link-color" v-for="name in wordCollectionNameList" :key="name" :value="name[0]">
+            <option class="setting-text link-color" v-for="name in wordCollectionNames" :key="name" :value="name[0]">
               {{ name[0].split(".")[0] }} | {{ name[1] }} 词</option>
           </select>
         </div>
         <div class="setting-item">
           <p class="setting-text">设定记忆量</p>
-          <select class="setting-input" v-model="dailyWordsNum">
+          <select class="setting-input" v-model="wordListLimit">
             <option class="setting-text link-color" v-for="num in [10, 20, 30, 50, 100]" :key="num" :value="num">每天 {{
-                num
+            num
             }} 个
             </option>
           </select>
@@ -43,10 +43,10 @@
           <p class="setting-text">自动播放开关</p>
           <select class="setting-input" v-model="autoPlayStatus">
             <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
-                status
-                  == 'on' ?
-                  '开'
-                  : '关'
+            status
+            == 'on' ?
+            '开'
+            : '关'
             }}
             </option>
           </select>
@@ -55,10 +55,10 @@
           <p class="setting-text">自动播放类型</p>
           <select class="setting-input" v-model="autoPlayType">
             <option class="setting-text link-color" v-for="status in ['am', 'en']" :key="status" :value="status">{{
-                status
-                  == 'am' ?
-                  '美标' :
-                  '英标'
+            status
+            == 'am' ?
+            '美标' :
+            '英标'
             }}
             </option>
           </select>
@@ -67,10 +67,10 @@
           <p class="setting-text">连续加载单词</p>
           <select class="setting-input" v-model="autoLoadNextWord">
             <option class="setting-text link-color" v-for="status in ['off', 'on']" :key="status" :value="status">{{
-                status
-                  == 'on' ?
-                  '开'
-                  : '关'
+            status
+            == 'on' ?
+            '开'
+            : '关'
             }}
             </option>
           </select>
@@ -82,7 +82,7 @@
         </div>
 
         <div class="buttons">
-          <p class="setting-text">Ver.20220620</p>
+          <p class="setting-text">Ver.20221012</p>
 
         </div>
 
@@ -93,79 +93,31 @@
 
 <script setup lang="ts">
 import { ref, onBeforeMount, watch, watchEffect } from "vue";
-import { parseJson, getFile } from "../request";
+import {
+  getDate,
+  REQUESTING_COUNT,
+  wordListLimit,
+  wordCollectionName,
+  wordCollectionNames,
+  wordCollectionContent,
+  wordListContent,
+  todayFinishedNum,
+  autoPlayStatus,
+  autoPlayType,
+  autoLoadNextWord,
+
+} from '../shared';
+
 import IconSetting from './icons/IconSetting.vue'
 import IconBack from './icons/back.vue'
 
-
-// tell father component the current book name
-const emit = defineEmits<{
-  (e: 'setWordCollectionName', name: string): void,
-  (e: 'setDailyWordsNum', num: number): void,
-
-}>()
-
-const props = defineProps<{
-  dailyWordsNumExist: number
-}>()
-
 const settingVisible = ref(false);
 
-const loadDailyWordsNum = () => localStorage.getItem('dailyWordsNum') ? Number(localStorage.getItem('dailyWordsNum')!) : 20
-const dailyWordsNum = ref(loadDailyWordsNum());
-
-const wordCollectionName = ref(localStorage.getItem('wordCollectionName') || '');
-
-const loadWordCollectionNameList = () => localStorage.getItem('wordCollectionNameList') ? JSON.parse(localStorage.getItem('WordCollectionNameList')!) : []
-const wordCollectionNameList = ref<string[]>(loadWordCollectionNameList());
-
-const autoPlayStatus = ref(localStorage.getItem('autoPlayStatus') || 'off');
-const autoPlayType = ref(localStorage.getItem('autoPlayType') || 'am');
-const autoLoadNextWord = ref(localStorage.getItem('autoLoadNextWord') || 'off');
-
-
 watchEffect(() => {
-  console.log('Selecter -> watchEffect -> save normal config.')
-  localStorage.setItem('autoPlayStatus', autoPlayStatus.value)
-  localStorage.setItem('autoPlayType', autoPlayType.value)
-  localStorage.setItem('autoLoadNextWord', autoLoadNextWord.value)
-})
-
-const checkCollectionNameExist = () => {
-  if (!wordCollectionNameList.value.includes(wordCollectionName.value)) {
-    return false
-  } else {
-    return true
-  }
-}
-
-const setWordCollectionNameList = (data: string[]) => {
-  wordCollectionNameList.value = data;
-  localStorage.setItem('wordCollectionNameList', JSON.stringify(data));
-  if (!checkCollectionNameExist()) {
-    wordCollectionName.value = wordCollectionNameList.value[wordCollectionNameList.value.length - 1][0];
-    localStorage.setItem('wordCollectionName', wordCollectionName.value)
-  }
-  emit('setWordCollectionName', wordCollectionName.value);
-  emit('setDailyWordsNum', dailyWordsNum.value)
-};
-
-
-watch(wordCollectionName, () => {
-  console.log("Selecter -> watchEffect -> save WordCollectionName", wordCollectionName.value)
-  localStorage.setItem('wordCollectionName', wordCollectionName.value);
-  emit('setWordCollectionName', wordCollectionName.value);
-})
-
-watch(dailyWordsNum, () => {
-  console.log("Selecter -> watchEffect -> save dailyWordsNum", dailyWordsNum.value)
-  localStorage.setItem('dailyWordsNum', String(dailyWordsNum.value));
-  emit('setDailyWordsNum', dailyWordsNum.value)
-})
-
-
-onBeforeMount(() => {
-  getFile('collection/names.json', parseJson, setWordCollectionNameList)
+  console.log('Selecter -> watchEffect -> save config.')
+  localStorage.setItem('autoPlayStatus', autoPlayStatus.value);
+  localStorage.setItem('autoPlayType', autoPlayType.value);
+  localStorage.setItem('autoLoadNextWord', autoLoadNextWord.value);
 })
 
 const cleanCacheConfirm = () => {
@@ -177,18 +129,18 @@ const cleanCacheConfirm = () => {
 }
 
 const getBriefInfo = () => {
-  let count = 0
-  const learningHistory = JSON.parse(localStorage.getItem('learningHistory')!) as {} || {}
-  const wordCollection = JSON.parse(localStorage.getItem(wordCollectionName.value)!) as [] || []
+  let count = 0;
+  const learningHistory = JSON.parse(localStorage.getItem('learningHistory')!) as {} || {};
+  const wordCollection = JSON.parse(localStorage.getItem(wordCollectionName.value)!) as [] || [];
   wordCollection.forEach((word) => {
     if (learningHistory.hasOwnProperty(word)) {
-      count += 1
+      count += 1;
     }
   })
   let percent = count / wordCollection.length;
   if ((percent < 0.01) && (percent > 0)) percent = 0.01;
   if (!percent) percent = 0;
-  return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%'
+  return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%';
 }
 
 </script>
