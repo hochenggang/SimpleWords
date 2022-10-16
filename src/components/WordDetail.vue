@@ -1,37 +1,44 @@
 <template>
   <div>
-    <div v-if="currentWordDetail" v-on:click="currentWordDetail = null" class="fixed-full "
-      style="background-color: var(--color-bg);z-index: 4;"></div>
+    <!-- 详情页的背景 -->
+    <div v-if="wordDetail" class="fixed-full " style="background-color: var(--color-bg);z-index: 4;"></div>
+    <!-- 详情主体 -->
     <div class="bar top-bar shadow" style="z-index: 5;">
-      <div :key="currentWord" class="detail" v-if="currentWordDetail">
+      <div :key="currentWord" class="detail" v-if="wordDetail">
         <div class="auto-warp">
           <span class="detail-h1 space ">{{ currentWord }}</span>
           <span>
-            <span class="detail-h4 space">{{ '⭐️'.repeat(Number(currentWordDetail?.collins_star)) }}</span>
-            <span class="detail-h4" v-if="currentWordDetail?.frequency_rank">{{ currentWordDetail?.frequency_rank
+            <span class="detail-h4 space">{{ '⭐️'.repeat(Number(wordDetail?.collins_star)) }}</span>
+            <span class="detail-h4" v-if="wordDetail?.frequency_rank">{{ wordDetail?.frequency_rank
             }}/{{
-              Math.round(currentWordDetail!.frequency_count /
+              Math.round(wordDetail!.frequency_count /
               10000)
               }}w</span>
           </span>
         </div>
+        <!-- 单词发音 -->
         <div>
-          <span class="detail-h4 detail-voice space"
-            @click="playAudio(getWordVoiceLink(currentWordDetail!.ph_am_mp3))">美/{{
-            currentWordDetail?.ph_am
-            }}/</span>
-          <span class="detail-h4 detail-voice" @click="playAudio(getWordVoiceLink(currentWordDetail!.ph_en_mp3))">英/{{
-          currentWordDetail?.ph_en
+          <span class="detail-h4 detail-voice space" @click="playAudio(getWordVoiceLink(wordDetail!.ph_am_mp3))">美/{{
+          wordDetail?.ph_am
+          }}/</span>
+          <span class="detail-h4 detail-voice" @click="playAudio(getWordVoiceLink(wordDetail!.ph_en_mp3))">英/{{
+          wordDetail?.ph_en
           }}/</span>
         </div>
-        <div :class="detailVisible ? '' : 'blur'" @click="detailVisible = true">
+        <!-- 单词详情 -->
+        <div>
           <div class="detail-h2">
-            <p v-for="p in currentWordDetail?.parts">{{ p.part }} {{ p.means.join('、') }}</p>
+            <p v-for="p in wordDetail?.parts">{{ p.part }} {{ p.means.join('、') }}</p>
           </div>
-          <div class="detail-sentences" v-for="c in currentWordDetail?.collins">
+          <div class="detail-sentences" v-for="c in wordDetail?.collins">
             <!-- <p class="detail-h3">{{ c.posp }}</p> -->
-            <p class="detail-h3">{{ c.def }}</p>
+            <!-- 英英释义 -->
+            <p class="detail-h3">
+              <span v-for="w in c.def.split(' ')" v-on:click="pushWord(w)">{{ w + ' ' }}</span>
+            </p>
+            <!-- 中文释义 -->
             <p class="detail-h3">{{ c.tran }}</p>
+            <!-- 例句 -->
             <div class="detail-sentences" v-for="e in c.example">
               <p class="detail-h4 detail-voice" @click="playAudio(getSentenceVoiceLink(e.tts_mp3))"
                 v-html="getMarkedSentence(e.ex)"></p>
@@ -41,7 +48,7 @@
         </div>
       </div>
 
-      <div class="bar bottom-bar shadow" style="z-index: 6;" v-if="currentWordDetail">
+      <div class="bar bottom-bar shadow" style="z-index: 6;" v-if="wordDetail">
         <div class="buttons">
           <span class="button" style="color:var(--color-success)" @click="markWord('know')">
             已掌握
@@ -52,8 +59,6 @@
           <span class="button" style="color:var(--color-danger)" @click="markWord('unkown')">
             不认识
           </span>
-
-
         </div>
       </div>
     </div>
@@ -80,17 +85,15 @@ import {
   autoPlayType,
   autoLoadNextWord,
   currentWord,
-  currentWordDetail,
+  wordDetail,
+  wordQueryHistory,
 
 } from '../shared';
 
-const detailVisible = ref(false);
-
+const wordDetailBlur = ref(false);
 
 const getSentenceVoiceLink = (url: string) => HOST + '/collins/voice/sentence/' + Md5.hashStr(url) + '.mp3';
 const getWordVoiceLink = (url: string) => HOST + '/collins/voice/word/' + Md5.hashStr(url) + '.mp3';
-
-
 
 let currentAudio: HTMLAudioElement | null = null;
 const playAudio = (src: string) => {
@@ -109,39 +112,51 @@ const playAudio = (src: string) => {
   });
 }
 
-
-
-
 const setHistory = (word: string, count: number) => {
+  // 修改历史记录并回写
+  const tempLearningHistory = JSON.parse(localStorage.getItem('learningHistory')!) || {};
+  tempLearningHistory[word] = count;
+  localStorage.setItem('learningHistory', JSON.stringify(tempLearningHistory));
+  // 如果标记为已知，从今日列表删除
+  if (count > 0) {
+    delete wordListContent.value[word];
 
-  const temp = JSON.parse(localStorage.getItem('learningHistory')!) || {};
-  temp[word] = count;
-  localStorage.setItem('learningHistory', JSON.stringify(temp));
-  delete wordListContent.value[word];
-  localStorage.setItem('wordListContent', JSON.stringify(wordListContent.value));
-
+  }
 }
 
-const addHistory = (word: string, count: number) => {
-  let baseCount = 0;
+const getLearningHistoryCount = (word: string) => {
   const temp = JSON.parse(localStorage.getItem('learningHistory')!) || {};
   if (temp.hasOwnProperty(word)) {
-    baseCount = temp[word];
+    return temp[word];
+  } else {
+    return 0;
   }
-  setHistory(word, baseCount + count);
-  todayFinishedNum.value += 1;
 }
 
+const pushWord = (word: string) => {
+  word = word.replaceAll(",", '').replaceAll(".", '').replaceAll("!", '').replaceAll("?", '');
+  wordQueryHistory.value.push(word);
+  console.log('pushWord: ', word, wordQueryHistory.value);
+}
+
+
+
 const markWord = (action: string) => {
-  console.log("WordDetail -> markWord ->", currentWord.value, action)
+  console.log("WordDetailEl -> markWord ->", currentWord.value, action)
+  if (!currentWord.value) {
+    return
+  }
+
   switch (action) {
     case 'know':
-      // if mark to know, set count+3 
-      addHistory(currentWord.value, 5)
+      // know += 5
+      setHistory(currentWord.value, getLearningHistoryCount(currentWord.value) + 5);
+      todayFinishedNum.value += 1;
       break;
     case 'maybeKnow':
-      // if mark to maybeKnow, set count+3
-      addHistory(currentWord.value, 1)
+      // maybeKnow += 3
+      setHistory(currentWord.value, getLearningHistoryCount(currentWord.value) + 3);
+      todayFinishedNum.value += 1;
       break;
     case 'unknow':
       // if mark to unknow, set 0
@@ -152,29 +167,36 @@ const markWord = (action: string) => {
   }
 
 
-  // auto play action
-  if (localStorage.getItem('autoLoadNextWord') == 'on') {
+  // 只要查询列表不为空，就删掉最后一个单词
+  if (wordQueryHistory.value.length > 0) {
+    wordQueryHistory.value.pop();
+    // 如果删除后还有单词，那么会触发加载操作
+  }
+
+  // 仅当查询列表为空时才执行连续加载检测
+  if (wordQueryHistory.value.length == 0 && localStorage.getItem('autoLoadNextWord') == 'on') {
     if (wordListContent.value) {
       const words = Object.keys(wordListContent.value);
       const nextIndex = Math.round(Math.random() * (words.length - 1));
-      console.log('markWord -> autoNext -> ', words[nextIndex]);
-
+      console.log('WordDetailEl -> autoNext -> ', words[nextIndex]);
       if (words[nextIndex]) {
-        currentWord.value = words[nextIndex];
+        wordQueryHistory.value.push(words[nextIndex]);
       } else {
-        currentWordDetail.value = null;
+        wordDetail.value = null;
       }
     }
   } else {
     // close detail
-    currentWordDetail.value = null;
+    wordDetail.value = null;
   }
-
 
 }
 
-
+// 获取高亮后的例句
 const getMarkedSentence = (text: string) => {
+  if (!currentWord.value) {
+    return ''
+  }
   let placeholder = currentWord.value;
   let start = text.indexOf(currentWord.value);
   if (start < 0) {
@@ -188,22 +210,18 @@ const getMarkedSentence = (text: string) => {
   }
 }
 
-watch(todayFinishedNum, () => {
-  localStorage.setItem('todayFinishedNum', String(todayFinishedNum.value));
-})
+
+
 
 onMounted(() => {
-
-  // do auto play onmount
+  // 在加载完毕后自动播放
   if (autoPlayStatus.value == 'on') {
-    console.log(currentWordDetail)
     if (autoPlayType.value == 'am') {
-      playAudio(getWordVoiceLink(currentWordDetail.value!.ph_am_mp3))
+      playAudio(getWordVoiceLink(wordDetail.value!.ph_am_mp3))
     } else {
-      playAudio(getWordVoiceLink(currentWordDetail.value!.ph_en_mp3))
+      playAudio(getWordVoiceLink(wordDetail.value!.ph_en_mp3))
     }
   }
-
 })
 
 </script>

@@ -1,22 +1,20 @@
 <script setup lang="ts">
-
+// 今日词集属于某个单词集，某个单词集来自全部词集
+// 当 APP 被加载时，需要准备好所有可以选的单词集，然后根据当前的单词集名称，准备好今日需要完成的单词
+// 与配置组件密切配合，当词集名称或者今日记忆量发生变化时，更新今日单词
 
 import { ref, onMounted, watch, Transition } from "vue";
 
-import Selecter from './components/Selecter.vue'
-import Loading from './components/Loading.vue'
-import WordsList from './components/WordsList.vue'
-import WordDetail from './components/WordDetail.vue'
+import SelecterEl from './components/Selecter.vue'
+import LoadingEl from './components/Loading.vue'
+import WordsListEl from './components/WordsList.vue'
+import WordDetailEl from './components/WordDetail.vue'
 
 import { getWordCollectionNames, getWordCollection } from './query';
 import { buildWordListContent } from './wordTool';
-import { getDate, REQUESTING_COUNT, wordCollectionName, wordCollectionNames, wordCollectionContent, wordListLimit, wordListContent, currentWordDetail, wordListId } from './shared';
+import { getDate, REQUESTING_COUNT, wordCollectionName, wordCollectionNames, wordCollectionContent, wordListLimit, wordListContent, wordDetail, wordListId, todayFinishedNum } from './shared';
 
-// .then((res) => res.json())
-// .then((json) => {})
-// .catch((err) => console.log('error:',err))
-// .finally(() => REQUESTING_COUNT.value -= 1)
-
+// 准备今日词集
 const initWordListContent = () => {
   if (localStorage.getItem('wordListId') == wordListId.value) {
     console.log('initWordListContent by cache.');
@@ -27,6 +25,7 @@ const initWordListContent = () => {
   }
 }
 
+// 准备某个单词集
 const initWordCollectionContent = () => {
   if (localStorage.getItem(wordCollectionName.value)) {
     console.log('initWordCollectionContent by cache.')
@@ -47,16 +46,16 @@ const initWordCollectionContent = () => {
 }
 
 onMounted(() => {
-  // update word listNames
+  // 准备词集列表
   getWordCollectionNames()
     .then((res) => res.json())
     .then((json) => {
       wordCollectionNames.value = json;
-      console.log('ok -> load word list names.')
-      // init word collection name
+      console.log('wordCollectionNames load successfully.')
+      // 选定词集名称
       if (!wordCollectionName.value) {
         wordCollectionName.value = wordCollectionNames.value[0][0];
-        console.log('ok -> init word list name.')
+        console.log('wordCollectionName auto selected.')
       } else {
         initWordCollectionContent();
       }
@@ -64,13 +63,14 @@ onMounted(() => {
     .catch((err) => console.log('error:', err))
     .finally(() => REQUESTING_COUNT.value -= 1)
 
-  // check date diff, reset todayFinishedNum
+  // 如果日期变化，重置学习进度
   if (localStorage.getItem('date') != getDate()) {
     console.log('reset todayFinishedNum.');
     localStorage.setItem('todayFinishedNum', '0');
+    todayFinishedNum.value = 0;
   }
 
-  // update date
+  // 更新日期缓存
   localStorage.setItem('date', getDate());
 })
 
@@ -78,9 +78,7 @@ onMounted(() => {
 
 // rebuild word list content when word collection content changed
 watch([wordCollectionName, wordListLimit], () => {
-  console.log('watch: wordCollectionName.')
-  localStorage.setItem('wordCollectionName', wordCollectionName.value);
-  localStorage.setItem('wordListLimit', String(wordListLimit.value));
+  console.log('APP -> initWordCollectionContent');
   initWordCollectionContent();
 })
 
@@ -88,11 +86,11 @@ watch([wordCollectionName, wordListLimit], () => {
 
 <template>
   <div class="main">
-    <Loading :count="REQUESTING_COUNT" :after="300" />
-    <Selecter />
-    <WordsList />
+    <LoadingEl :count="REQUESTING_COUNT" :after="300" />
+    <SelecterEl />
+    <WordsListEl />
     <Transition >
-      <WordDetail v-if="currentWordDetail" />
+      <WordDetailEl v-if="wordDetail" />
     </Transition>
   </div>
 </template>

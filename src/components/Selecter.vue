@@ -17,7 +17,7 @@
     <div class="bar top-bar shadow" v-if="settingVisible">
       <div class="setting-items">
         <div class="setting-item">
-          <p class="setting-text">{{ getBriefInfo() }}</p>
+          <p class="setting-text">{{ briefInfo }}</p>
 
           <div class="setting-input" @click="settingVisible = !settingVisible">
             <IconBack />
@@ -92,6 +92,10 @@
 </template>
 
 <script setup lang="ts">
+
+// 与 APP 组件密切配合
+// 承载配置项
+
 import { ref, onBeforeMount, watch, watchEffect } from "vue";
 import {
   getDate,
@@ -110,16 +114,13 @@ import {
 
 import IconSetting from './icons/IconSetting.vue'
 import IconBack from './icons/back.vue'
+import { computed } from "@vue/reactivity";
 
 const settingVisible = ref(false);
 
-watchEffect(() => {
-  console.log('Selecter -> watchEffect -> save config.')
-  localStorage.setItem('autoPlayStatus', autoPlayStatus.value);
-  localStorage.setItem('autoPlayType', autoPlayType.value);
-  localStorage.setItem('autoLoadNextWord', autoLoadNextWord.value);
-})
 
+
+// 提供配置重置功能
 const cleanCacheConfirm = () => {
   const r = confirm('历史记录会被清除\n设置记录将会被重置\n确定要继续吗？')
   if (r) {
@@ -128,7 +129,8 @@ const cleanCacheConfirm = () => {
   }
 }
 
-const getBriefInfo = () => {
+// 提供词集摘要
+const briefInfo = computed(() => {
   let count = 0;
   const learningHistory = JSON.parse(localStorage.getItem('learningHistory')!) as {} || {};
   const wordCollection = JSON.parse(localStorage.getItem(wordCollectionName.value)!) as [] || [];
@@ -141,7 +143,7 @@ const getBriefInfo = () => {
   if ((percent < 0.01) && (percent > 0)) percent = 0.01;
   if (!percent) percent = 0;
   return wordCollectionName.value.split('.json')[0] + ' | ' + percent.toFixed(2) + '%';
-}
+})
 
 </script>
 
